@@ -17,7 +17,7 @@ resource "aws_security_group" "rds_sg" {
 module "rds" {
   source = "terraform-aws-modules/rds/aws"
 
-  identifier = "demodb"
+  identifier = "${local.base_tag}-rds"
 
   engine            = "mysql"
   family            = "mysql5.7"
@@ -28,8 +28,6 @@ module "rds" {
   #   db_name  = "demodb"
   #   username = "user"
   #   port     = "3306"
-
-  #  vpc_security_group_ids = ["sg-12345678"]
 
   tags = {
     Name = "${local.base_tag}-rds"

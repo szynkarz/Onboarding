@@ -21,7 +21,7 @@ resource "aws_security_group" "efs_sg" {
   }
 }
 
-resource "aws_efs_file_system" "this" {
+resource "aws_efs_file_system" "efs" {
   creation_token = "${local.base_tag}-efs"
   encrypted      = true
 
@@ -30,10 +30,10 @@ resource "aws_efs_file_system" "this" {
   }
 }
 
-resource "aws_efs_mount_target" "this" {
+resource "aws_efs_mount_target" "mt" {
   for_each = { for idx, az in var.az_list : idx => az }
 
-  file_system_id  = aws_efs_file_system.this.id
+  file_system_id  = aws_efs_file_system.efs.id
   subnet_id       = aws_subnet.asg_subnet[each.key].id
   security_groups = [aws_security_group.efs_sg.id]
 }

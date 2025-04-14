@@ -15,11 +15,11 @@ variable "az_list" {
 }
 
 variable "asg_max_size" {
-  default = 3
+  default = 5
 }
 
 variable "asg_min_size" {
-  default = 1
+  default = 3
 }
 
 variable "asg_desired_capacity" {
@@ -27,23 +27,36 @@ variable "asg_desired_capacity" {
 }
 
 variable "ami_id" {
-  description = "WordPress AMI ID"
-  default     = "ami-0ed7a99bcb164dd1b"
+  description = "Ubuntu AMI"
+  default     = "ami-03250b0e01c28d196"
+}
+
+variable "key_name" {
+  default = "key"
 }
 
 variable "instance_type" {
-  default = "t3.micro"
+  default = "t2.micro"
 }
 
 variable "db_instance_type" {
   default = "db.t3.micro"
 }
 
+variable "db_name" {
+  default = "wordpress"
+}
+
+variable "db_username" {
+  default = "user"
+}
+
+
 variable "allocated_storage" {
   default = 5
 }
 
 variable "domain_name" {
-  description = "domain name for the load balancer"
+  description = "domain name for ALB"
   default     = "shynkaruk.me"
 }

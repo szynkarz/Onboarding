@@ -39,6 +39,10 @@ variable "instance_type" {
   default = "t2.micro"
 }
 
+variable "kibana_instance_type" {
+  default = "t2.micro"
+}
+
 variable "db_instance_type" {
   default = "db.t3.micro"
 }
@@ -51,12 +55,14 @@ variable "db_username" {
   default = "user"
 }
 
-
 variable "allocated_storage" {
   default = 5
 }
 
 variable "domain_name" {
-  description = "domain name for ALB"
-  default     = "shynkaruk.me"
+  default = "shynkaruk.me"
+}
+
+variable "local_domain_name" {
+  default = "elk"
 }

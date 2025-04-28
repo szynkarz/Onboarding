@@ -57,7 +57,7 @@ resource "aws_subnet" "elasticsearch_subnet" {
   for_each                = { for idx, az in var.az_list : idx => az }
   vpc_id                  = aws_vpc.vpc.id
   map_public_ip_on_launch = true
-  cidr_block              = cidrsubnet(var.cidr_block, 8, tonumber(each.key) + 21)
+  cidr_block              = cidrsubnet(var.cidr_block, 8, tonumber(each.key) + 41)
   availability_zone       = "${var.region}${each.value}"
 
   tags = {

@@ -1,7 +1,0 @@
-server.port: 5601
-server.host: "0.0.0.0"
-elasticsearch.hosts: ["http://localhost:9200"]
-server.name: "kibana"
-xpack.monitoring.ui.container.elasticsearch.enabled: true
-xpack.reporting.encryptionKey: "a_random_string_of_32_or_more_characters"
-xpack.security.encryptionKey: "another_random_string_of_32_or_more_characters"

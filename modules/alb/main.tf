@@ -133,7 +133,7 @@ resource "aws_lb" "alb" {
 }
 
 resource "aws_lb_target_group" "asg" {
-  port        = 8080
+  port        = var.port
   protocol    = "HTTP"
   vpc_id      = var.vpc_id
   target_type = "instance"
@@ -158,7 +158,7 @@ resource "aws_lb_target_group" "asg" {
 
 resource "aws_lb_listener" "http" {
   load_balancer_arn = aws_lb.alb.arn
-  port              = 8080
+  port              = var.port
   protocol          = "HTTP"
 
   default_action {
@@ -207,8 +207,8 @@ resource "aws_route53_record" "alb" {
 #   vpc_id = var.vpc_id
 
 #   ingress {
-#     from_port       = 8080
-#     to_port         = 8080
+#     from_port       = var.port
+#     to_port         = var.port
 #     protocol        = "-1"
 #     security_groups = [aws_security_group.alb_sg.id]
 #   }

@@ -9,13 +9,13 @@ filebeat.inputs:
 - type: log
   enabled: true
   paths:
-    - /var/log/nginx/access.log
+    - /var/log/httpd/access.log
 setup.template.enabled: false
 filebeat.config.modules:
   path: ${path.config}/modules.d/*.yml
   reload.enabled: true
 filebeat.modules:
-- module: nginx
+- module: apache2
   access:
     enabled: true
 output.logstash:
@@ -23,10 +23,7 @@ output.logstash:
   hosts: ["logstash.elk.internal:5044"]
 EOF
 
-
-systemctl enable nginx
-systemctl start nginx
-filebeat modules enable nginx
+filebeat modules enable apache2
 systemctl enable filebeat
 systemctl start filebeat
 

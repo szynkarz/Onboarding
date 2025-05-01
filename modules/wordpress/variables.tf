@@ -7,7 +7,7 @@ variable "region" {
 }
 
 variable "base_tag" {
-  default = "elk"
+  default = "wordpress"
 }
 
 variable "az_list" {
@@ -27,8 +27,7 @@ variable "asg_desired_capacity" {
 }
 
 variable "ami_id" {
-  description = "Ubuntu AMI"
-  default     = "ami-03250b0e01c28d196"
+  default = "ami-03250b0e01c28d196"
 }
 
 variable "key_name" {
@@ -36,10 +35,6 @@ variable "key_name" {
 }
 
 variable "instance_type" {
-  default = "t2.micro"
-}
-
-variable "kibana_instance_type" {
   default = "t2.micro"
 }
 
@@ -55,6 +50,7 @@ variable "db_username" {
   default = "user"
 }
 
+
 variable "allocated_storage" {
   default = 5
 }
@@ -63,6 +59,17 @@ variable "domain_name" {
   default = "shynkaruk.me"
 }
 
-variable "local_domain_name" {
-  default = "elk"
+variable "vpc_id" {
+  type = string
+}
+
+variable "private_subnet_ids" {
+  type = list(string)
+}
+
+variable "public_subnet_ids" {
+  type = list(string)
+}
+variable "db_subnet_group" {
+  type = string
 }

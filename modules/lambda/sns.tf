@@ -5,7 +5,7 @@ resource "aws_sns_topic" "health_check_notifications" {
 resource "aws_sns_topic_subscription" "email_subscription" {
   topic_arn = aws_sns_topic.health_check_notifications.arn
   protocol  = "email"
-  endpoint  = "arseniishynkaruk@gmail.com"
+  endpoint  = var.email_notifications
 }
 
 resource "aws_lambda_permission" "allow_sns" {

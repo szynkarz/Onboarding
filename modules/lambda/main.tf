@@ -18,7 +18,7 @@ resource "aws_s3_object" "endpoints" {
   source = "src/endpoints.txt"
 }
 
-resource "aws_s3_object" "endpoints" {
+resource "aws_s3_object" "counts" {
   bucket = aws_s3_bucket.lambda.bucket
   key    = "counts.json"
   source = "src/counts.json"
@@ -32,25 +32,18 @@ resource "aws_lambda_permission" "allow_s3" {
   source_arn    = aws_s3_bucket.lambda.arn
 }
 
-
 resource "aws_cloudwatch_log_group" "health_check_logs" {
   name              = "/aws/lambda/health_check"
   retention_in_days = 1
 }
 
-resource "aws_lambda_layer_version" "dependencies" {
-  layer_name          = "health-check-dependencies"
-  filename            = "src/lambda_layer.zip"
-  compatible_runtimes = ["python3.12"]
-}
-
-resource "aws_cloudwatch_event_rule" "every_five_minutes" {
+resource "aws_cloudwatch_event_rule" "interval_minutes" {
   name                = "5min"
-  schedule_expression = "rate(5 minutes)"
+  schedule_expression = "rate(${var.interval_minutes} minutes)"
 }
 
 resource "aws_cloudwatch_event_target" "trigger_lambda_every_five_minutes" {
-  rule      = aws_cloudwatch_event_rule.every_five_minutes.name
+  rule      = aws_cloudwatch_event_rule.interval_minutes.name
   target_id = "health_check_lambda"
   arn       = aws_lambda_function.health_check.arn
 }
@@ -60,7 +53,25 @@ resource "aws_lambda_permission" "cloudwatch" {
   action        = "lambda:InvokeFunction"
   function_name = aws_lambda_function.health_check.function_name
   principal     = "events.amazonaws.com"
-  source_arn    = aws_cloudwatch_event_rule.every_five_minutes.arn
+  source_arn    = aws_cloudwatch_event_rule.interval_minutes.arn
+}
+
+resource "aws_security_group" "lambda_sg" {
+  name   = "${var.base_tag}-lambda-sg"
+  vpc_id = var.vpc_id
+
+  ingress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = [""]
+  }
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0/0"]
+  }
 }
 
 resource "aws_lambda_function" "health_check" {
@@ -69,13 +80,13 @@ resource "aws_lambda_function" "health_check" {
   handler       = "health_check.lambda_handler"
   layers        = [aws_lambda_layer_version.dependencies.arn]
   role          = aws_iam_role.lambda_role.arn
-  timeout       = 60
+  timeout       = 10
   memory_size   = 128
   # s3_bucket     = aws_s3_bucket.lambda.bucket
   # s3_key        = "health_check.py"
   filename = "src/health_check.zip"
   vpc_config {
-    subnet_ids         = [aws_subnet.lambda_subnet-private.id]
+    subnet_ids         = [var.subnet_ids]
     security_group_ids = [aws_security_group.lambda_sg.id]
   }
 
@@ -87,4 +98,8 @@ resource "aws_lambda_function" "health_check" {
   }
 }
 
-
+resource "aws_lambda_layer_version" "dependencies" {
+  layer_name          = "health-check-dependencies"
+  filename            = "src/lambda_layer.zip"
+  compatible_runtimes = ["python3.12"]
+}

@@ -2,12 +2,15 @@ variable "cidr_block" {
   default = "10.0.0.0/16"
 }
 
+variable "vpc_id" {
+}
+
 variable "region" {
   default = "eu-central-1"
 }
 
 variable "base_tag" {
-  default = "wordpress"
+  default = "elk"
 }
 
 variable "az_list" {
@@ -27,8 +30,7 @@ variable "asg_desired_capacity" {
 }
 
 variable "ami_id" {
-  description = "Ubuntu AMI"
-  default     = "ami-03250b0e01c28d196"
+  default = "ami-03250b0e01c28d196"
 }
 
 variable "key_name" {
@@ -36,6 +38,10 @@ variable "key_name" {
 }
 
 variable "instance_type" {
+  default = "t2.micro"
+}
+
+variable "kibana_instance_type" {
   default = "t2.micro"
 }
 
@@ -51,12 +57,32 @@ variable "db_username" {
   default = "user"
 }
 
-
 variable "allocated_storage" {
   default = 5
 }
 
 variable "domain_name" {
-  description = "domain name for ALB"
-  default     = "shynkaruk.me"
+  default = "shynkaruk.me"
+}
+
+variable "local_domain_name" {
+  default = "elk"
+}
+
+variable "master_count" {
+  description = "Number of Elasticsearch master nodes"
+  type        = number
+  default     = 3
+}
+
+variable "data_count" {
+  description = "Number of Elasticsearch data nodes"
+  type        = number
+  default     = 3
+}
+
+variable "logstash_count" {
+  description = "Number of Logstash nodes"
+  type        = number
+  default     = 2
 }

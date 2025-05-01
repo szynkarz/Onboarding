@@ -62,7 +62,7 @@ def lambda_handler(event, context):
         except requests.exceptions.RequestException as e:
             health_check(endpoint, e)
             count[endpoint] += 1
-            if count[endpoint] >= FAILURE_THRESHOLD:
+            if count[endpoint] == FAILURE_THRESHOLD:
                 send_notification(endpoint)
 
     write_count(count)

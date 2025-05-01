@@ -70,15 +70,15 @@ module "wordpress" {
   base_tag = "wordpress"
 }
 
-# module "elk" {
-#   source             = "../modules/elk"
-#   kibana_domain_name = "kibana.${var.domain_name}"
-#   vpc_id             = module.vpc.vpc_id
-#   private_subnet_ids = [local.elasticsearch_subnet_a, local.elasticsearch_subnet_b]
-#   public_subnet_ids  = [local.public_subnet_a, local.public_subnet_b]
+module "elk" {
+  source             = "../modules/elk"
+  kibana_domain_name = "kibana.${var.domain_name}"
+  vpc_id             = module.vpc.vpc_id
+  private_subnet_ids = [local.elasticsearch_subnet_a, local.elasticsearch_subnet_b]
+  public_subnet_ids  = [local.public_subnet_a, local.public_subnet_b]
 
-#   base_tag = "elk"
-# }
+  base_tag = "elk"
+}
 
 module "lambda" {
   source              = "../modules/lambda"

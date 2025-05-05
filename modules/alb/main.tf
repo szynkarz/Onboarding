@@ -1,22 +1,43 @@
 data "aws_acm_certificate" "this" {
-  domain      = var.alb_dns_name
+  domain      = var.domain_name
   statuses    = ["ISSUED"]
   most_recent = true
 }
 
+data "aws_vpc" "this" {
+  id = var.vpc_id
+}
+
 data "aws_route53_zone" "this" {
-  name         = var.domain_name
+  name         = regex("\\w+\\.\\w+$", var.domain_name)
   private_zone = false
 }
 
+data "aws_ami" "al2" {
+  most_recent = true
+  owners      = ["amazon"]
+
+  filter {
+    name   = "name"
+    values = ["amzn2-ami-hvm-*-x86_64-gp2"]
+  }
+}
+
 resource "aws_security_group" "alb_sg" {
-  name        = "${var.alb_base_tag}-alb-sg"
+  name        = "${var.base_tag}-alb-sg"
   description = "Security group for ALB"
   vpc_id      = var.vpc_id
 
   ingress {
     from_port   = 443
     to_port     = 443
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  ingress {
+    from_port   = 22
+    to_port     = 22
     protocol    = "tcp"
     cidr_blocks = ["0.0.0.0/0"]
   }
@@ -31,8 +52,8 @@ resource "aws_security_group" "alb_sg" {
   ingress {
     from_port   = 0
     to_port     = 0
-    protocol    = "tcp"
-    cidr_blocks = [var.cidr_block]
+    protocol    = "-1"
+    cidr_blocks = [data.aws_vpc.this.cidr_block]
   }
 
   egress {
@@ -43,21 +64,21 @@ resource "aws_security_group" "alb_sg" {
   }
 
   tags = {
-    Name = "${var.alb_base_tag}-alb-sg"
+    Name = "${var.base_tag}-alb-sg"
   }
 }
 
 resource "aws_lb" "alb" {
-  name                             = "${var.alb_base_tag}-alb"
+  name                             = "${var.base_tag}-alb"
   internal                         = false
   load_balancer_type               = "application"
   security_groups                  = [aws_security_group.alb_sg.id]
-  subnets                          = [for subnet in aws_subnet.lb_subnet : subnet.id]
+  subnets                          = [for subnet in var.public_subnet_ids : subnet]
   enable_cross_zone_load_balancing = true
   enable_deletion_protection       = false
 
   tags = {
-    Name = "${var.alb_base_tag}-alb"
+    Name = "${var.base_tag}-alb"
   }
 }
 
@@ -77,7 +98,7 @@ resource "aws_lb_target_group" "asg" {
   }
 
   tags = {
-    Name = "${var.alb_base_tag}-tg"
+    Name = "${var.base_tag}-tg"
   }
 
   lifecycle {
@@ -121,7 +142,7 @@ resource "aws_autoscaling_attachment" "asg_attachment" {
 
 resource "aws_route53_record" "alb" {
   zone_id = data.aws_route53_zone.this.zone_id
-  name    = var.alb_dns_name
+  name    = var.domain_name
   type    = "A"
 
   alias {
@@ -131,68 +152,9 @@ resource "aws_route53_record" "alb" {
   }
 }
 
-# resource "aws_security_group" "asg_sg" {
-#   name   = "${var.alb_base_tag}-asg-sg"
-#   vpc_id = var.vpc_id
-
-#   ingress {
-#     from_port       = var.port
-#     to_port         = var.port
-#     protocol        = "-1"
-#     security_groups = [aws_security_group.alb_sg.id]
-#   }
-
-#   ingress {
-#     from_port       = 4180
-#     to_port         = 4180
-#     protocol        = "-1"
-#     security_groups = [aws_security_group.alb_sg.id]
-#   }
-
-#   ingress {
-#     from_port       = 5601
-#     to_port         = 5601
-#     protocol        = "-1"
-#     security_groups = [aws_security_group.alb_sg.id]
-#   }
-
-#   ingress {
-#     from_port       = 9200
-#     to_port         = 9200
-#     protocol        = "-1"
-#     security_groups = [aws_security_group.alb_sg.id]
-#   }
-
-#   ingress {
-#     from_port       = 443
-#     to_port         = 443
-#     protocol        = "tcp"
-#     security_groups = [aws_security_group.alb_sg.id]
-#   }
-
-#   ingress {
-#     from_port   = 22
-#     to_port     = 22
-#     protocol    = "tcp"
-#     cidr_blocks = ["0.0.0.0/0"]
-#   }
-
-#   egress {
-#     from_port   = 0
-#     to_port     = 0
-#     protocol    = "-1"
-#     cidr_blocks = ["0.0.0.0/0"]
-#   }
-
-#   tags = {
-#     Name = "${var.alb_base_tag}-asg-sg"
-#   }
-# }
-
-
 resource "aws_launch_template" "lt" {
-  name                   = "${var.alb_base_tag}-lt"
-  image_id               = var.ami_id
+  name                   = "${var.base_tag}-lt"
+  image_id               = data.aws_ami.al2.id
   instance_type          = var.instance_type
   update_default_version = true
   key_name               = var.key_name
@@ -204,7 +166,7 @@ resource "aws_launch_template" "lt" {
 resource "aws_autoscaling_group" "asg" {
   max_size            = var.asg_max_size
   min_size            = var.asg_min_size
-  vpc_zone_identifier = [for subnet in aws_subnet.asg_subnet : subnet.id]
+  vpc_zone_identifier = [for subnet in var.private_subnet_ids : subnet]
   launch_template {
     id      = aws_launch_template.lt.id
     version = "$Latest"

@@ -1,6 +1,5 @@
 #!/bin/bash
 yum update -y
-amazon-linux-extras install nginx1 -y
 
 rpm --install https://artifacts.elastic.co/downloads/beats/filebeat/filebeat-7.17.8-x86_64.rpm
 

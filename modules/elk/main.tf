@@ -8,14 +8,25 @@ data "aws_ami" "al2" {
   }
 }
 
+data "aws_vpc" "this" {
+  id = var.vpc_id
+}
+
 resource "aws_security_group" "elk_sg" {
-  vpc_id = aws_vpc.vpc.id
+  vpc_id = var.vpc_id
   name   = "${var.base_tag}-sg"
   ingress {
     from_port   = 0
     to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = [data.aws_vpc.this.cidr_block]
+  }
+
+  ingress {
+    from_port   = 22
+    to_port     = 22
     protocol    = "tcp"
-    cidr_blocks = [var.vpc_id.cidr_block]
+    cidr_blocks = ["0.0.0.0/0"]
   }
 
   egress {
@@ -30,30 +41,23 @@ resource "aws_security_group" "elk_sg" {
 }
 
 module "alb-kibana" {
-  source       = "../alb"
-  user_data    = base64encode(file("./kibana.sh"))
-  alb_base_tag = var.base_tag
-  vpc_id       = aws_vpc.vpc.id
-  gateway_id   = aws_internet_gateway.igw.id
-  alb_dns_name = "kibana.${var.domain_name}"
-  port         = 80
+  source             = "../alb"
+  user_data          = base64encode(file("${path.module}/kibana.sh"))
+  vpc_id             = var.vpc_id
+  public_subnet_ids  = var.public_subnet_ids
+  private_subnet_ids = var.private_subnet_ids
+  domain_name        = var.kibana_domain_name
+  port               = 80
+  base_tag           = var.base_tag
 }
 
 resource "aws_instance" "es-master" {
   security_groups = [aws_security_group.elk_sg.id]
   key_name        = var.key_name
-  subnet_id       = aws_subnet.kibana_subnet.id
+  subnet_id       = var.private_subnet_ids[0]
   instance_type   = var.instance_type
   ami             = data.aws_ami.al2.id
-  user_data = templatefile("./es-master.sh", {
-    SEED_HOSTS = join(
-      [
-        aws_instance.es-master.private_ip,
-        aws_instance.es-data.private_ip,
-      ],
-      ","
-    )
-  })
+  user_data       = file("${path.module}/es-master.sh")
   tags = {
     Name = "${var.base_tag}-es-master"
   }
@@ -62,10 +66,10 @@ resource "aws_instance" "es-master" {
 resource "aws_instance" "es-data" {
   security_groups = [aws_security_group.elk_sg.id]
   key_name        = var.key_name
-  subnet_id       = aws_subnet.kibana_subnet.id
+  subnet_id       = var.private_subnet_ids[0]
   instance_type   = var.instance_type
   ami             = data.aws_ami.al2.id
-  user_data       = file("./es-data.sh")
+  user_data       = file("${path.module}/es-data.sh")
   tags = {
     Name = "${var.base_tag}-es-data"
   }
@@ -78,15 +82,10 @@ resource "aws_instance" "logstash" {
   subnet_id       = var.private_subnet_ids[0]
   instance_type   = var.instance_type
   ami             = data.aws_ami.al2.id
-  user_data       = file("./logstash.sh")
+  user_data       = file("${path.module}/logstash.sh")
   tags = {
     Name = "${var.base_tag}-logstash"
   }
-}
-
-data "aws_route53_zone" "this" {
-  name         = var.domain_name
-  private_zone = false
 }
 
 resource "aws_route53_zone" "elk" {
@@ -101,7 +100,7 @@ resource "aws_route53_record" "es-master" {
   name    = "es-master.${var.local_domain_name}"
   ttl     = 300
   type    = "A"
-  records = [aws_instance.es-master[*].private_ip]
+  records = [aws_instance.es-master.private_ip]
 }
 
 resource "aws_route53_record" "es-data" {
@@ -109,7 +108,7 @@ resource "aws_route53_record" "es-data" {
   name    = "es-data.${var.local_domain_name}"
   ttl     = 300
   type    = "A"
-  records = [aws_instance.es-data[*].private_ip]
+  records = [aws_instance.es-data.private_ip]
 }
 
 resource "aws_route53_record" "logstash" {
@@ -117,7 +116,7 @@ resource "aws_route53_record" "logstash" {
   name    = "logstash.${var.local_domain_name}"
   ttl     = 300
   type    = "A"
-  records = [aws_instance.logstash[*].private_ip]
+  records = [aws_instance.logstash.private_ip]
 }
 
 

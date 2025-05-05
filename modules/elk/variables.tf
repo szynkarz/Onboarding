@@ -38,11 +38,11 @@ variable "key_name" {
 }
 
 variable "instance_type" {
-  default = "t2.micro"
+  default = "t3.small"
 }
 
 variable "kibana_instance_type" {
-  default = "t2.micro"
+  default = "t3.small"
 }
 
 variable "db_instance_type" {
@@ -61,28 +61,18 @@ variable "allocated_storage" {
   default = 5
 }
 
-variable "domain_name" {
+variable "kibana_domain_name" {
   default = "shynkaruk.me"
 }
 
 variable "local_domain_name" {
-  default = "elk"
+  default = "elk.internal"
 }
 
-variable "master_count" {
-  description = "Number of Elasticsearch master nodes"
-  type        = number
-  default     = 3
+variable "private_subnet_ids" {
+  type = list(string)
 }
 
-variable "data_count" {
-  description = "Number of Elasticsearch data nodes"
-  type        = number
-  default     = 3
-}
-
-variable "logstash_count" {
-  description = "Number of Logstash nodes"
-  type        = number
-  default     = 2
+variable "public_subnet_ids" {
+  type = list(string)
 }

@@ -8,6 +8,10 @@ data "aws_ami" "al2" {
   }
 }
 
+data "aws_vpc" "this" {
+  id = var.vpc_id
+}
+
 resource "aws_security_group" "asg_sg" {
   name   = "${var.base_tag}-asg-sg"
   vpc_id = var.vpc_id
@@ -37,7 +41,7 @@ resource "aws_security_group" "asg_sg" {
     from_port   = 5044
     to_port     = 5044
     protocol    = "tcp"
-    cidr_blocks = [var.cidr_block]
+    cidr_blocks = [data.aws_vpc.this.cidr_block]
   }
 
   egress {
@@ -61,7 +65,7 @@ resource "aws_launch_template" "lt" {
   iam_instance_profile {
     name = aws_iam_instance_profile.ec2_efs_profile.name
   }
-  user_data = base64encode(templatefile("scripts/user_data.sh", {
+  user_data = base64encode(templatefile("${path.module}/user_data.sh", {
     DB_NAME     = module.rds.db_instance_name
     DB_USER     = module.rds.db_instance_username
     DB_PASSWORD = random_password.password.result
@@ -75,7 +79,7 @@ resource "aws_launch_template" "lt" {
 resource "aws_autoscaling_group" "asg" {
   max_size            = var.asg_max_size
   min_size            = var.asg_min_size
-  vpc_zone_identifier = [for subnet in var.var.private_subnet_ids : subnet.id]
+  vpc_zone_identifier = [for subnet in var.private_subnet_ids : subnet]
   launch_template {
     id      = aws_launch_template.lt.id
     version = "$Latest"

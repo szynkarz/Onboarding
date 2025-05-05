@@ -1,53 +1,3 @@
-resource "aws_route_table" "rt" {
-  vpc_id = var.vpc_id
-
-  route {
-    cidr_block = "0.0.0.0/0"
-    gateway_id = var.gateway_id
-  }
-
-  tags = {
-    Name = "${var.alb_base_tag}-rt"
-  }
-}
-
-resource "aws_route_table_association" "lb_subnet_association" {
-  for_each       = aws_subnet.lb_subnet
-  subnet_id      = each.value.id
-  route_table_id = aws_route_table.rt.id
-}
-
-resource "aws_route_table_association" "asg_subnet_association" {
-  for_each       = aws_subnet.asg_subnet
-  subnet_id      = each.value.id
-  route_table_id = aws_route_table.rt.id
-}
-
-resource "aws_subnet" "lb_subnet" {
-  for_each                = { for idx, az in var.az_list : idx => az }
-  vpc_id                  = var.vpc_id
-  cidr_block              = cidrsubnet(var.cidr_block, 8, tonumber(each.key) + 11)
-  availability_zone       = "${var.region}${each.value}"
-  map_public_ip_on_launch = true
-
-  tags = {
-    Name = "${var.alb_base_tag}-lb_subnet-${each.key + 1}"
-  }
-}
-
-resource "aws_subnet" "asg_subnet" {
-
-  for_each                = { for idx, az in var.az_list : idx => az }
-  vpc_id                  = var.vpc_id
-  map_public_ip_on_launch = true
-  cidr_block              = cidrsubnet(var.cidr_block, 8, tonumber(each.key) + 21)
-  availability_zone       = "${var.region}${each.value}"
-
-  tags = {
-    Name = "${var.alb_base_tag}-asg_subnet-${each.key + 1}"
-  }
-}
-
 data "aws_acm_certificate" "this" {
   domain      = var.alb_dns_name
   statuses    = ["ISSUED"]
@@ -65,34 +15,6 @@ resource "aws_security_group" "alb_sg" {
   vpc_id      = var.vpc_id
 
   ingress {
-    from_port   = var.port
-    to_port     = var.port
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
-  ingress {
-    from_port   = 4180
-    to_port     = 4180
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
-  ingress {
-    from_port   = 5601
-    to_port     = 5601
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
-  ingress {
-    from_port   = 9200
-    to_port     = 9200
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
-  ingress {
     from_port   = 443
     to_port     = 443
     protocol    = "tcp"
@@ -100,10 +22,17 @@ resource "aws_security_group" "alb_sg" {
   }
 
   ingress {
-    from_port   = 22
-    to_port     = 22
+    from_port   = 80
+    to_port     = 80
     protocol    = "tcp"
     cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  ingress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "tcp"
+    cidr_blocks = [var.cidr_block]
   }
 
   egress {

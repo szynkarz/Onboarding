@@ -10,9 +10,9 @@ data "aws_route53_zone" "this" {
 }
 
 resource "aws_security_group" "alb_sg" {
-  name        = "${local.base_tag}-alb-sg"
+  name        = "${var.base_tag}-alb-sg"
   description = "Security group for ALB"
-  vpc_id      = aws_vpc.vpc.id
+  vpc_id      = var.vpc_id
 
   ingress {
     from_port   = 80
@@ -30,29 +30,37 @@ resource "aws_security_group" "alb_sg" {
     description = "HTTPS web traffic"
   }
 
+  ingress {
+    from_port   = 5044
+    to_port     = 5044
+    protocol    = "tcp"
+    cidr_blocks = [var.cidr_block]
+    description = "HTTPS web traffic"
+  }
+
   egress {
     from_port   = 0
     to_port     = 0
     protocol    = "-1"
-    cidr_blocks = ["10.0.0.0/16"]
+    cidr_blocks = ["0.0.0.0/0"]
   }
 
   tags = {
-    Name = "${local.base_tag}-alb-sg"
+    Name = "${var.base_tag}-alb-sg"
   }
 }
 
 resource "aws_lb" "alb" {
-  name               = "${local.base_tag}-alb"
-  internal           = false
-  load_balancer_type = "application"
-  security_groups    = [aws_security_group.alb_sg.id]
-  subnets            = [for subnet in aws_subnet.lb_subnet : subnet.id]
-
-  enable_deletion_protection = false
+  name                             = "${var.base_tag}-alb"
+  internal                         = false
+  load_balancer_type               = "application"
+  security_groups                  = [aws_security_group.alb_sg.id]
+  subnets                          = [for subnet in var.public_subnet_ids : subnet.id]
+  enable_cross_zone_load_balancing = true
+  enable_deletion_protection       = false
 
   tags = {
-    Name = "${local.base_tag}-alb"
+    Name = "${var.base_tag}-alb"
   }
 }
 
@@ -60,7 +68,7 @@ resource "aws_lb_target_group" "asg" {
   name_prefix = "h1"
   port        = 80
   protocol    = "HTTP"
-  vpc_id      = aws_vpc.vpc.id
+  vpc_id      = var.vpc_id
   target_type = "instance"
 
   health_check {
@@ -73,7 +81,7 @@ resource "aws_lb_target_group" "asg" {
   }
 
   tags = {
-    Name = "${local.base_tag}-tg"
+    Name = "${var.base_tag}-tg"
   }
 
   lifecycle {

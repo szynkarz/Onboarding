@@ -4,8 +4,8 @@ resource "random_password" "password" {
 }
 
 resource "aws_security_group" "rds_sg" {
-  name   = "${local.base_tag}-rds-sg"
-  vpc_id = aws_vpc.vpc.id
+  name   = "${var.base_tag}-rds-sg"
+  vpc_id = var.vpc_id
 
   ingress {
     from_port       = 3306
@@ -15,14 +15,14 @@ resource "aws_security_group" "rds_sg" {
   }
 
   tags = {
-    Name = "${local.base_tag}-rds-sg"
+    Name = "${var.base_tag}-rds-sg"
   }
 }
 
 module "rds" {
   source = "terraform-aws-modules/rds/aws"
 
-  identifier = "${local.base_tag}-rds"
+  identifier = "${var.base_tag}-rds"
 
   engine               = "mysql"
   family               = "mysql8.0"
@@ -37,14 +37,14 @@ module "rds" {
   port                        = 3306
   manage_master_user_password = false
   tags = {
-    Name = "${local.base_tag}-rds"
+    Name = "${var.base_tag}-rds"
   }
 
   vpc_security_group_ids = [aws_security_group.rds_sg.id]
 
   multi_az                = true
   create_db_subnet_group  = false
-  db_subnet_group_name    = aws_db_subnet_group.this.name
+  db_subnet_group_name    = var.db_subnet_group
   backup_retention_period = 3
   skip_final_snapshot     = true
 }

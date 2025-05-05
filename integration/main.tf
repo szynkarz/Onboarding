@@ -31,8 +31,9 @@ module "vpc" {
   cidr   = var.cidr_block
   azs    = ["${var.region}a", "${var.region}b"]
 
-  enable_dns_hostnames = true
-  enable_dns_support   = true
+  enable_dns_hostnames       = true
+  enable_dns_support         = true
+  manage_default_network_acl = false
 
   private_subnets = [
     cidrsubnet(var.cidr_block, 8, 11), # wordpress_subnet_a
@@ -41,7 +42,6 @@ module "vpc" {
     cidrsubnet(var.cidr_block, 8, 22), # elasticsearch_subnet_b
     cidrsubnet(var.cidr_block, 8, 31), # lambda_subnet
   ]
-
   create_database_subnet_group = true
   database_subnets = [
     cidrsubnet(var.cidr_block, 8, 101), # rds_subnet_a
@@ -85,7 +85,7 @@ module "lambda" {
   endpoint_urls       = var.endpoint_urls
   email_notifications = var.email_notifications
   vpc_id              = module.vpc.vpc_id
-  subnet_ids          = [local.lambda_subnet]
+  private_subnet_ids  = [local.lambda_subnet]
   interval_minutes    = 5
   failure_threshold   = 3
 

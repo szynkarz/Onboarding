@@ -1,3 +1,7 @@
+data "aws_vpc" "this" {
+  id = var.vpc_id
+}
+
 resource "random_string" "bucket_suffix" {
   length  = 10
   special = false
@@ -15,13 +19,13 @@ resource "aws_s3_bucket" "lambda" {
 resource "aws_s3_object" "endpoints" {
   bucket = aws_s3_bucket.lambda.bucket
   key    = "endpoints.txt"
-  source = "src/endpoints.txt"
+  source = "${path.module}/src/endpoints.txt"
 }
 
 resource "aws_s3_object" "counts" {
   bucket = aws_s3_bucket.lambda.bucket
   key    = "counts.json"
-  source = "src/counts.json"
+  source = "${path.module}/src/counts.json"
 }
 
 resource "aws_lambda_permission" "allow_s3" {
@@ -38,7 +42,7 @@ resource "aws_cloudwatch_log_group" "health_check_logs" {
 }
 
 resource "aws_cloudwatch_event_rule" "interval_minutes" {
-  name                = "5min"
+  name                = "interval_minutes"
   schedule_expression = "rate(${var.interval_minutes} minutes)"
 }
 
@@ -64,14 +68,21 @@ resource "aws_security_group" "lambda_sg" {
     from_port   = 0
     to_port     = 0
     protocol    = "-1"
-    cidr_blocks = [""]
+    cidr_blocks = [data.aws_vpc.this.cidr_block]
   }
+
   egress {
     from_port   = 0
     to_port     = 0
     protocol    = "-1"
-    cidr_blocks = ["0.0.0/0"]
+    cidr_blocks = ["0.0.0.0/0"]
   }
+}
+
+data "archive_file" "script" {
+  type        = "zip"
+  source_file = "${path.module}/src/health_check.py"
+  output_path = "${path.module}/src/health_check.zip"
 }
 
 resource "aws_lambda_function" "health_check" {
@@ -84,9 +95,9 @@ resource "aws_lambda_function" "health_check" {
   memory_size   = 128
   # s3_bucket     = aws_s3_bucket.lambda.bucket
   # s3_key        = "health_check.py"
-  filename = "src/health_check.zip"
+  filename = "${path.module}/src/health_check.zip"
   vpc_config {
-    subnet_ids         = [var.subnet_ids]
+    subnet_ids         = [for subnet in var.private_subnet_ids : subnet]
     security_group_ids = [aws_security_group.lambda_sg.id]
   }
 
@@ -100,6 +111,6 @@ resource "aws_lambda_function" "health_check" {
 
 resource "aws_lambda_layer_version" "dependencies" {
   layer_name          = "health-check-dependencies"
-  filename            = "src/lambda_layer.zip"
+  filename            = "${path.module}/src/lambda_layer.zip"
   compatible_runtimes = ["python3.12"]
 }

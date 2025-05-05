@@ -23,5 +23,6 @@ variable "failure_threshold" {
 variable "endpoint_urls" {
 }
 
-variable "subnet_ids" {
+variable "private_subnet_ids" {
+  type = list(string)
 }

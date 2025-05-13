@@ -63,7 +63,7 @@ resource "aws_launch_template" "lt" {
   key_name               = var.key_name
   update_default_version = true
   iam_instance_profile {
-    name = aws_iam_instance_profile.ec2_efs_profile.name
+    name = aws_iam_instance_profile.wordpress_profile.name
   }
   user_data = base64encode(templatefile("${path.module}/user_data.sh", {
     DB_NAME     = module.rds.db_instance_name

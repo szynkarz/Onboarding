@@ -142,7 +142,7 @@ resource "aws_ssm_parameter" "user" {
 
 resource "aws_ssm_parameter" "password" {
   name  = "DB_PASSWORD"
-  type  = "String"
+  type  = "SecureString"
   value = random_password.password.result
 }
 

@@ -1,6 +1,6 @@
 #!/bin/bash
 yum update
-sudo yum install -y httpd amazon-efs-utils
+sudo yum install -y httpd amazon-efs-utils amazon-cloudwatch-agent
 sudo amazon-linux-extras install -y mariadb10.5 php8.2
 systemctl enable httpd
 systemctl start httpd
@@ -61,6 +61,37 @@ output.logstash:
   hosts: ["logstash.elk.internal:5044"]
 EOF
 
+cat > /opt/aws/amazon-cloudwatch-agent/bin/config.json << "EOF"
+            {
+                "agent": {
+                    "metrics_collection_interval": 60,
+                    "run_as_user": "root"
+                },
+                "metrics": {
+                    "namespace": "Wordpress",
+                    "metrics_collected": {
+                        "disk": {
+                            "measurement": [
+                                "used_percent",
+                                "used",
+                                "free",
+                                "total"
+                            ]
+                        },
+                        "mem": {
+                            "measurement": [
+                                "mem_used_percent",
+                                "mem_used",
+                                "mem_total",
+                                "mem_available"
+                            ]
+                        }
+                    }
+                }
+            }
+EOF
+
+/opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl -a fetch-config -m ec2 -s -c file:/opt/aws/amazon-cloudwatch-agent/bin/config.json
 filebeat modules enable apache2
 systemctl enable filebeat
 systemctl start filebeat

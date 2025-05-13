@@ -40,11 +40,10 @@ module "rds" {
     Name = "${var.base_tag}-rds"
   }
 
-  vpc_security_group_ids = [aws_security_group.rds_sg.id]
+  vpc_security_group_ids = []
 
   multi_az                = true
-  create_db_subnet_group  = false
-  db_subnet_group_name    = var.db_subnet_group
+  create_db_subnet_group  = true
   backup_retention_period = 3
   skip_final_snapshot     = true
 }
